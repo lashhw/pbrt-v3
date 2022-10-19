@@ -42,6 +42,7 @@
 #include "pbrt.h"
 #include "primitive.h"
 #include <atomic>
+#include <fstream>
 
 namespace pbrt {
 struct BVHBuildNode;
@@ -92,6 +93,7 @@ class BVHAccel : public Aggregate {
     const SplitMethod splitMethod;
     std::vector<std::shared_ptr<Primitive>> primitives;
     LinearBVHNode *nodes = nullptr;
+    mutable std::ofstream ray_queries_file;
 };
 
 std::shared_ptr<BVHAccel> CreateBVHAccelerator(

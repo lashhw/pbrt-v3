@@ -185,6 +185,9 @@ BVHAccel::BVHAccel(std::vector<std::shared_ptr<Primitive>> p,
     : maxPrimsInNode(std::min(255, maxPrimsInNode)),
       splitMethod(splitMethod),
       primitives(std::move(p)) {
+    ray_queries_file.open("ray_queries.bin", std::ios::out | std::ios::binary);
+    std::cout << "ray_queries.bin created." << std::endl;
+
     ProfilePhase _(Prof::AccelConstruction);
     if (primitives.empty()) return;
     // Build BVH from _primitives_
@@ -657,9 +660,20 @@ int BVHAccel::flattenBVHTree(BVHBuildNode *node, int *offset) {
     return myOffset;
 }
 
-BVHAccel::~BVHAccel() { FreeAligned(nodes); }
+BVHAccel::~BVHAccel() {
+    ray_queries_file.close();
+    FreeAligned(nodes);
+}
 
 bool BVHAccel::Intersect(const Ray &ray, SurfaceInteraction *isect) const {
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.o.x), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.o.y), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.o.z), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.d.x), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.d.y), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.d.z), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.tMax), sizeof(float));
+
     if (!nodes) return false;
     ProfilePhase p(Prof::AccelIntersect);
     bool hit = false;
@@ -700,6 +714,14 @@ bool BVHAccel::Intersect(const Ray &ray, SurfaceInteraction *isect) const {
 }
 
 bool BVHAccel::IntersectP(const Ray &ray) const {
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.o.x), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.o.y), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.o.z), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.d.x), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.d.y), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.d.z), sizeof(float));
+    ray_queries_file.write(reinterpret_cast<const char*>(&ray.tMax), sizeof(float));
+
     if (!nodes) return false;
     ProfilePhase p(Prof::AccelIntersectP);
     Vector3f invDir(1.f / ray.d.x, 1.f / ray.d.y, 1.f / ray.d.z);
